@@ -1,0 +1,42 @@
+modules = ["go-1.21", "nodejs-20", "web"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "golanshare"
+
+[[workflows.workflow]]
+name = "golanshare"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && go run ."
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 41853
+externalPort = 3000
+
+[deployment]
+deploymentTarget = "vm"
+run = ["sh", "-c", "cd backend && go run ."]
