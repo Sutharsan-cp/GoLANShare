@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoLANshare - Easy Local File Sharing</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="login-header">
+                <h2>🚀 Welcome to GoLANshare</h2>
+                <p>Share files instantly on your local network</p>
+            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="username" value="admin" placeholder="Enter username">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" value="admin" placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-large">
+                    <span class="btn-icon">🔓</span>
+                    Sign In
+                </button>
+            </form>
+            <div class="demo-note">
+                <p>💡 <strong>Demo Mode:</strong> Using default credentials</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden until login) -->
+    <div id="app" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">🚀</div>
+                    <div>
+                        <h1>GoLANshare</h1>
+                        <span class="app-tagline">Local File Sharing</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-center">
+                <div class="connection-info">
+                    <div class="status-indicator connected"></div>
+                    <span>Connected to Network</span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="user-menu">
+                    <span id="userGreeting">Hello, User!</span>
+                    <button id="logoutBtn" class="btn btn-outline">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📱</div>
+                    <div class="stat-info">
+                        <h3 id="devicesCount">0</h3>
+                        <p>Devices Online</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📤</div>
+                    <div class="stat-info">
+                        <h3 id="transfersCount">0</h3>
+                        <p>Active Transfers</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💬</div>
+                    <div class="stat-info">
+                        <h3 id="chatCount">0</h3>
+                        <p>Chat Messages</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📁</div>
+                    <div class="stat-info">
+                        <h3 id="filesCount">0</h3>
+                        <p>Shared Files</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Actions -->
+            <div class="main-grid">
+                <!-- File Upload Section -->
+                <div class="card upload-section">
+                    <h2 class="card-title">
+                        <span class="icon">📤</span>
+                        Send Files
+                    </h2>
+                    
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drop files here or click to browse</h3>
+                        <p>Supports multiple files and folders</p>
+                        <button class="btn btn-primary" id="browseFilesBtn">
+                            <span class="btn-icon">📎</span>
+                            Select Files
+                        </button>
+                        <input type="file" id="fileInput" multiple style="display: none;">
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" data-action="screenshot">
+                            <span class="action-icon">📸</span>
+                            Screenshot
+                        </button>
+                        <button class="quick-action-btn" data-action="text">
+                            <span class="action-icon">📝</span>
+                            Share Text
+                        </button>
+                        <button class="quick-action-btn" data-action="folder">
+                            <span class="action-icon">📂</span>
+                            Share Folder
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Devices & Chat Section -->
+                <div class="card devices-chat-section">
+                    <!-- Devices -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3>📱 Available Devices</h3>
+                            <button class="btn btn-sm" id="refreshDevicesBtn">
+                                <span class="btn-icon">🔄</span>
+                                Refresh
+                            </button>
+                        </div>
+                        <div class="devices-list" id="devicesList">
+                            <div class="empty-state">
+                                <div class="empty-icon">🔍</div>
+                                <p>Searching for devices...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Chat -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3>💬 Quick Chat</h3>
+                        </div>
+                        <div class="chat-window">
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="message system">
+                                    <strong>System:</strong> Welcome! Start chatting with other devices.
+                                </div>
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" id="chatInput" placeholder="Type a message...">
+                                <button class="btn btn-primary" id="sendChatBtn">
+                                    <span class="btn-icon">📤</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transfers Section -->
+            <div class="card transfers-section">
+                <div class="section-header">
+                    <h2>📋 File Transfers</h2>
+                    <div class="transfer-controls">
+                        <button class="btn btn-outline" id="pauseAllBtn">Pause All</button>
+                        <button class="btn btn-outline" id="resumeAllBtn">Resume All</button>
+                        <button class="btn btn-outline" id="clearCompletedBtn">Clear Completed</button>
+                    </div>
+                </div>
+                <div class="transfers-list" id="transfersList">
+                    <div class="empty-state">
+                        <div class="empty-icon">📤</div>
+                        <p>No active transfers</p>
+                        <small>Files you send or receive will appear here</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sharing Options -->
+            <div class="card sharing-options">
+                <h2>🔗 Sharing Options</h2>
+                <div class="options-grid">
+                    <div class="sharing-option">
+                        <div class="option-icon">📧</div>
+                        <h4>Share Link</h4>
+                        <p>Generate a shareable link</p>
+                        <button class="btn btn-outline" id="generateLinkBtn">Get Link</button>
+                    </div>
+                    <div class="sharing-option">
+                        <div class="option-icon">🔒</div>
+                        <h4>Secure Room</h4>
+                        <p>Create password-protected share</p>
+                        <button class="btn btn-outline" id="secureRoomBtn">Create Room</button>
+                    </div>
+                    <div class="sharing-option">
+                        <div class="option-icon">⏰</div>
+                        <h4>Temporary Share</h4>
+                        <p>Files auto-delete after time</p>
+                        <button class="btn btn-outline" id="tempShareBtn">Set Timer</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notifications" class="notifications"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
