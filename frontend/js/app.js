@@ -281,6 +281,10 @@ renderDevices() {
         const container = document.getElementById('transfersList');
         const countElement = document.getElementById('transfersCount');
         
+        if (!this.transfers || !Array.isArray(this.transfers)) {
+            this.transfers = [];
+        }
+        
         const activeTransfers = this.transfers.filter(t => t.status !== 'completed');
         countElement.textContent = activeTransfers.length;
         

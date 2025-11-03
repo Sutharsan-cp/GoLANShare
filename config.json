@@ -1,5 +1,5 @@
 {
-  "port": "8081",
+  "port": "5000",
   "host": "0.0.0.0",
   "enable_tls": false,
   "tls_cert": "cert.pem",
