@@ -269,11 +269,16 @@ renderDevices() {
         try {
             const response = await fetch(this.apiBase + '/api/transfers');
             if (response.ok) {
-                this.transfers = await response.json();
+                const data = await response.json();
+                this.transfers = Array.isArray(data) ? data : [];
+                this.renderTransfers();
+            } else {
+                this.transfers = [];
                 this.renderTransfers();
             }
         } catch (error) {
-            this.renderTransfers(); // Will show empty state
+            this.transfers = [];
+            this.renderTransfers();
         }
     }
 
