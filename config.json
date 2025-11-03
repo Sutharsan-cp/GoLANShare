@@ -1,0 +1,11 @@
+{
+  "port": "8081",
+  "host": "0.0.0.0",
+  "enable_tls": false,
+  "tls_cert": "cert.pem",
+  "tls_key": "key.pem",
+  "require_auth": true,
+  "storage_path": "./storage",
+  "upload_path": "./storage/uploads",
+  "max_upload_size": 1073741824
+}
