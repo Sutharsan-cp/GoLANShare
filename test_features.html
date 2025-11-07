@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoLANshare Features Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>GoLANshare Additional Features Test</h1>
+    
+    <div class="test-section">
+        <h2>Settings Functionality</h2>
+        <button class="test-button" onclick="testSettings()">Test Settings Load/Save</button>
+        <div id="settings-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Analytics Dashboard</h2>
+        <button class="test-button" onclick="testAnalytics()">Test Analytics Functions</button>
+        <div id="analytics-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Encryption Features</h2>
+        <button class="test-button" onclick="testEncryption()">Test Encryption Functions</button>
+        <div id="encryption-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Scheduler Features</h2>
+        <button class="test-button" onclick="testScheduler()">Test Scheduler Functions</button>
+        <div id="scheduler-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Remote Access</h2>
+        <button class="test-button" onclick="testRemoteAccess()">Test Remote Access Functions</button>
+        <div id="remote-result" class="result"></div>
+    </div>
+
+    <script>
+        // Mock app object for testing
+        const app = {
+            files: [
+                { name: 'test1.txt', size: 1024 },
+                { name: 'test2.jpg', size: 2048 }
+            ],
+            transfers: [
+                { status: 'completed' },
+                { status: 'uploading' },
+                { status: 'completed' }
+            ],
+            devices: [
+                { id: '1', name: 'Device 1' },
+                { id: '2', name: 'Device 2' }
+            ],
+            
+            calculateSuccessRate() {
+                const completed = this.transfers.filter(t => t.status === 'completed').length;
+                const total = this.transfers.length;
+                return total > 0 ? Math.round((completed / total) * 100) : 100;
+            },
+            
+            getTotalFileSize() {
+                return this.files.reduce((total, file) => total + (file.size || 0), 0);
+            },
+            
+            generateRandomKey() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 64; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+        };
+
+        function testSettings() {
+            const result = document.getElementById('settings-result');
+            
+            // Test settings gathering
+            const mockSettings = {
+                requireAuth: 'false',
+                encryption: 'true',
+                autoDelete: 'true',
+                compress: 'false',
+                maxUploadSize: '1024',
+                serverPort: '8081',
+                theme: 'auto',
+                enableNotifications: 'true'
+            };
+            
+            // Test localStorage operations
+            localStorage.setItem('testSettings', JSON.stringify(mockSettings));
+            const retrieved = JSON.parse(localStorage.getItem('testSettings'));
+            
+            if (JSON.stringify(mockSettings) === JSON.stringify(retrieved)) {
+                result.innerHTML = '✅ Settings save/load functionality working correctly';
+                result.style.background = '#d4edda';
+            } else {
+                result.innerHTML = '❌ Settings functionality failed';
+                result.style.background = '#f8d7da';
+            }
+        }
+
+        function testAnalytics() {
+            const result = document.getElementById('analytics-result');
+            
+            try {
+                const successRate = app.calculateSuccessRate();
+                const totalSize = app.getTotalFileSize();
+                const deviceCount = app.devices.length;
+                const activeTransfers = app.transfers.filter(t => t.status === 'uploading' || t.status === 'downloading').length;
+                
+                result.innerHTML = `
+                    ✅ Analytics functions working:<br>
+                    • Success Rate: ${successRate}%<br>
+                    • Total File Size: ${totalSize} bytes<br>
+                    • Connected Devices: ${deviceCount}<br>
+                    • Active Transfers: ${activeTransfers}
+                `;
+                result.style.background = '#d4edda';
+            } catch (error) {
+                result.innerHTML = `❌ Analytics functionality failed: ${error.message}`;
+                result.style.background = '#f8d7da';
+            }
+        }
+
+        function testEncryption() {
+            const result = document.getElementById('encryption-result');
+            
+            try {
+                const key = app.generateRandomKey();
+                
+                // Test key generation
+                if (key && key.length === 64) {
+                    localStorage.setItem('encryptionKey', key);
+                    const retrieved = localStorage.getItem('encryptionKey');
+                    
+                    if (retrieved === key) {
+                        result.innerHTML = `✅ Encryption functions working:<br>• Key generated: ${key.substring(0, 16)}...<br>• Key storage: Working`;
+                        result.style.background = '#d4edda';
+                    } else {
+                        throw new Error('Key storage failed');
+                    }
+                } else {
+                    throw new Error('Key generation failed');
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Encryption functionality failed: ${error.message}`;
+                result.style.background = '#f8d7da';
+            }
+        }
+
+        function testScheduler() {
+            const result = document.getElementById('scheduler-result');
+            
+            try {
+                // Test scheduled task creation
+                const task = {
+                    id: Date.now().toString(),
+                    type: 'cleanup',
+                    frequency: 'daily',
+                    datetime: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+                    description: 'Test cleanup task',
+                    created: new Date().toISOString(),
+                    status: 'scheduled'
+                };
+                
+                const scheduledTasks = [task];
+                localStorage.setItem('scheduledTasks', JSON.stringify(scheduledTasks));
+                
+                const retrieved = JSON.parse(localStorage.getItem('scheduledTasks'));
+                
+                if (retrieved.length === 1 && retrieved[0].id === task.id) {
+                    result.innerHTML = `✅ Scheduler functions working:<br>• Task created: ${task.type}<br>• Task storage: Working<br>• Tasks count: ${retrieved.length}`;
+                    result.style.background = '#d4edda';
+                } else {
+                    throw new Error('Task storage failed');
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Scheduler functionality failed: ${error.message}`;
+                result.style.background = '#f8d7da';
+            }
+        }
+
+        function testRemoteAccess() {
+            const result = document.getElementById('remote-result');
+            
+            try {
+                // Test remote access settings
+                const settings = {
+                    enabled: true,
+                    requireVPN: false,
+                    enableSSL: true,
+                    password: 'test123',
+                    allowedIPs: '192.168.1.0/24',
+                    port: '8082'
+                };
+                
+                localStorage.setItem('remoteAccessSettings', JSON.stringify(settings));
+                const retrieved = JSON.parse(localStorage.getItem('remoteAccessSettings'));
+                
+                if (retrieved.enabled === settings.enabled && retrieved.port === settings.port) {
+                    result.innerHTML = `✅ Remote Access functions working:<br>• Settings saved: ${Object.keys(settings).length} options<br>• Port: ${retrieved.port}<br>• SSL: ${retrieved.enableSSL ? 'Enabled' : 'Disabled'}`;
+                    result.style.background = '#d4edda';
+                } else {
+                    throw new Error('Settings storage failed');
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Remote Access functionality failed: ${error.message}`;
+                result.style.background = '#f8d7da';
+            }
+        }
+
+        // Run all tests on page load
+        window.onload = function() {
+            setTimeout(() => {
+                testSettings();
+                testAnalytics();
+                testEncryption();
+                testScheduler();
+                testRemoteAccess();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

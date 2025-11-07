@@ -2,14 +2,17 @@ package main
 
 import (
         "context"
+        "crypto/tls"
         "encoding/json"
         "fmt"
         "io/ioutil"
         "log"
+        "net"
         "net/http"
         "os"
         "os/signal"
         "path/filepath"
+        "runtime"
         "strings"
         "syscall"
         "time"
@@ -31,6 +34,9 @@ type Config struct {
 }
 
 func main() {
+        // Setup logging
+        setupLogging()
+        
         wd, err := os.Getwd()
         if err != nil {
                 log.Fatal("Error getting working directory:", err)
@@ -78,18 +84,47 @@ func main() {
         go hub.run()
         go startExpiryCron()
 
-        // Server setup
+        // Server setup with production configurations
         addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
+        
+
+        
         server := &http.Server{
-                Addr:         addr,
-                Handler:      nil,
-                ReadTimeout:  30 * time.Second,
-                WriteTimeout: 30 * time.Second,
-                IdleTimeout:  60 * time.Second,
+                Addr:           addr,
+                Handler:        http.DefaultServeMux,
+                ReadTimeout:    60 * time.Second,
+                WriteTimeout:   60 * time.Second,
+                IdleTimeout:    120 * time.Second,
+                MaxHeaderBytes: 1 << 20, // 1MB
+        }
+        
+        // Configure TLS if enabled
+        if config.EnableTLS {
+                tlsConfig := &tls.Config{
+                        MinVersion:               tls.VersionTLS12,
+                        CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+                        PreferServerCipherSuites: true,
+                        CipherSuites: []uint16{
+                                tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                                tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+                                tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        },
+                }
+                server.TLSConfig = tlsConfig
         }
 
-        log.Printf("GoLANshare server running on http://%s", addr)
+        protocol := "http"
+        if config.EnableTLS {
+                protocol = "https"
+        }
+        
+        log.Printf("GoLANshare server running on %s://%s", protocol, addr)
         log.Printf("Frontend directory: %s", frontendDir)
+        log.Printf("Go version: %s", runtime.Version())
+        log.Printf("OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
+        
+        // Get and display network interfaces
+        displayNetworkInfo()
 
         // Start server
         go func() {
@@ -203,6 +238,25 @@ func setupRoutes() {
     http.HandleFunc("/api/transfers", transfersHandler)
     http.HandleFunc("/api/chat", chatHandler)
     http.HandleFunc("/api/settings", settingsHandler)
+    http.HandleFunc("/api/files", filesHandler)
+    http.HandleFunc("/api/files/delete", authMiddleware(fileDeleteHandler))
+    
+    // Private sharing endpoints
+    http.HandleFunc("/api/share/send", authMiddleware(privateSendHandler))
+    http.HandleFunc("/api/share/receive", authMiddleware(privateReceiveHandler))
+    http.HandleFunc("/api/share/request", authMiddleware(shareRequestHandler))
+    http.HandleFunc("/api/share/accept", authMiddleware(shareAcceptHandler))
+    http.HandleFunc("/api/share/reject", authMiddleware(shareRejectHandler))
+    http.HandleFunc("/api/share/history", authMiddleware(shareHistoryHandler))
+    
+    // Device interaction endpoints
+    http.HandleFunc("/api/device/connect", authMiddleware(deviceConnectHandler))
+    http.HandleFunc("/api/device/disconnect", authMiddleware(deviceDisconnectHandler))
+    http.HandleFunc("/api/device/info", deviceInfoHandler)
+    http.HandleFunc("/api/device/scan", authMiddleware(deviceScanHandler))
+    http.HandleFunc("/api/device/add", authMiddleware(deviceAddHandler))
+    http.HandleFunc("/api/device/test", deviceTestHandler)
+    http.HandleFunc("/api/debug/clients", debugClientsHandler)
     
     // WebSocket
     http.HandleFunc("/ws", websocketHandler)
@@ -269,5 +323,57 @@ func serveFrontend(w http.ResponseWriter, r *http.Request) {
 func enableCORS(w *http.ResponseWriter) {
         (*w).Header().Set("Access-Control-Allow-Origin", "*")
         (*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        (*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        (*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        (*w).Header().Set("Access-Control-Allow-Credentials", "true")
+        (*w).Header().Set("Access-Control-Max-Age", "86400")
+}
+
+func displayNetworkInfo() {
+        interfaces, err := net.Interfaces()
+        if err != nil {
+                log.Printf("Error getting network interfaces: %v", err)
+                return
+        }
+        
+        log.Println("Available network interfaces:")
+        for _, iface := range interfaces {
+                if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+                        continue
+                }
+                
+                addrs, err := iface.Addrs()
+                if err != nil {
+                        continue
+                }
+                
+                for _, addr := range addrs {
+                        var ip net.IP
+                        switch v := addr.(type) {
+                        case *net.IPNet:
+                                ip = v.IP
+                        case *net.IPAddr:
+                                ip = v.IP
+                        }
+                        
+                        if ip == nil || ip.IsLoopback() || ip.To4() == nil {
+                                continue
+                        }
+                        
+                        log.Printf("  %s: %s", iface.Name, ip.String())
+                        if config.EnableTLS {
+                                log.Printf("    Access via: https://%s:%s", ip.String(), config.Port)
+                        } else {
+                                log.Printf("    Access via: http://%s:%s", ip.String(), config.Port)
+                        }
+                }
+        }
+}
+
+func setupLogging() {
+        // Create logs directory
+        os.MkdirAll("logs", 0755)
+        
+        // Set log format
+        log.SetFlags(log.LstdFlags | log.Lshortfile)
+        log.Println("Production GoLANshare - Logging initialized")
 }

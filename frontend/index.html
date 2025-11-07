@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GoLANshare">
 </head>
 <body>
     <!-- Login Modal -->
@@ -46,22 +51,34 @@
                     <div class="logo-icon">🚀</div>
                     <div>
                         <h1>GoLANshare</h1>
-                        <span class="app-tagline">Local File Sharing</span>
+                        <span class="app-tagline">ShareIt Alternative</span>
                     </div>
                 </div>
             </div>
             
             <div class="header-center">
                 <div class="connection-info">
-                    <div class="status-indicator connected"></div>
-                    <span>Connected to Network</span>
+                    <div class="status-indicator connected" id="connectionStatus"></div>
+                    <span id="connectionText">Connected to Network</span>
+                </div>
+                <div class="network-info" id="networkInfo">
+                    <span class="network-ip" id="deviceIP">Loading...</span>
+                    <br>
+                    <small id="clientInfo" style="color: var(--text-light);">Client info loading...</small>
                 </div>
             </div>
             
             <div class="header-right">
+                <button class="btn btn-icon" id="notificationsBtn" title="Notifications">
+                    <span class="btn-icon">🔔</span>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
                 <div class="user-menu">
                     <span id="userGreeting">Hello, User!</span>
-                    <button id="logoutBtn" class="btn btn-outline">Logout</button>
+                    <button id="logoutBtn" class="btn btn-outline">
+                        <span class="btn-icon">🚪</span>
+                        Logout
+                    </button>
                 </div>
             </div>
         </header>
@@ -70,32 +87,45 @@
         <main class="app-main">
             <!-- Quick Stats -->
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card stat-devices">
                     <div class="stat-icon">📱</div>
                     <div class="stat-info">
                         <h3 id="devicesCount">0</h3>
-                        <p>Devices Online</p>
+                        <p>Devices Available</p>
+                        <small class="stat-subtitle">Ready to share</small>
+                    </div>
+                    <div class="stat-trend">
+                        <span class="trend-indicator">●</span>
+                        <span class="trend-text">Scanning...</span>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card stat-transfers">
                     <div class="stat-icon">📤</div>
                     <div class="stat-info">
                         <h3 id="transfersCount">0</h3>
                         <p>Active Transfers</p>
+                        <small class="stat-subtitle">In progress</small>
+                    </div>
+                    <div class="stat-progress">
+                        <div class="mini-progress-bar">
+                            <div class="mini-progress-fill" id="transferProgress" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card stat-messages">
                     <div class="stat-icon">💬</div>
                     <div class="stat-info">
                         <h3 id="chatCount">0</h3>
-                        <p>Chat Messages</p>
+                        <p>Messages</p>
+                        <small class="stat-subtitle">Unread</small>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card stat-files">
                     <div class="stat-icon">📁</div>
                     <div class="stat-info">
                         <h3 id="filesCount">0</h3>
                         <p>Shared Files</p>
+                        <small class="stat-subtitle">Available</small>
                     </div>
                 </div>
             </div>
@@ -122,17 +152,9 @@
 
                     <!-- Quick Actions -->
                     <div class="quick-actions">
-                        <button class="quick-action-btn" data-action="screenshot">
-                            <span class="action-icon">📸</span>
-                            Screenshot
-                        </button>
                         <button class="quick-action-btn" data-action="text">
                             <span class="action-icon">📝</span>
                             Share Text
-                        </button>
-                        <button class="quick-action-btn" data-action="folder">
-                            <span class="action-icon">📂</span>
-                            Share Folder
                         </button>
                     </div>
                 </div>
@@ -143,10 +165,16 @@
                     <div class="section">
                         <div class="section-header">
                             <h3>📱 Available Devices</h3>
-                            <button class="btn btn-sm" id="refreshDevicesBtn">
-                                <span class="btn-icon">🔄</span>
-                                Refresh
-                            </button>
+                            <div class="device-controls">
+                                <button class="btn btn-sm" id="refreshDevicesBtn">
+                                    <span class="btn-icon">🔄</span>
+                                    Refresh
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="app.addDeviceManually()">
+                                    <span class="btn-icon">➕</span>
+                                    Add Device
+                                </button>
+                            </div>
                         </div>
                         <div class="devices-list" id="devicesList">
                             <div class="empty-state">
@@ -183,8 +211,6 @@
                 <div class="section-header">
                     <h2>📋 File Transfers</h2>
                     <div class="transfer-controls">
-                        <button class="btn btn-outline" id="pauseAllBtn">Pause All</button>
-                        <button class="btn btn-outline" id="resumeAllBtn">Resume All</button>
                         <button class="btn btn-outline" id="clearCompletedBtn">Clear Completed</button>
                     </div>
                 </div>
@@ -197,27 +223,170 @@
                 </div>
             </div>
 
-            <!-- Sharing Options -->
-            <div class="card sharing-options">
-                <h2>🔗 Sharing Options</h2>
-                <div class="options-grid">
-                    <div class="sharing-option">
-                        <div class="option-icon">📧</div>
-                        <h4>Share Link</h4>
-                        <p>Generate a shareable link</p>
-                        <button class="btn btn-outline" id="generateLinkBtn">Get Link</button>
+            <!-- Shared Files Section -->
+            <div class="card shared-files-section">
+                <div class="section-header">
+                    <h2>📁 Shared Files</h2>
+                    <button class="btn btn-outline" id="refreshFilesBtn">
+                        <span class="btn-icon">🔄</span>
+                        Refresh
+                    </button>
+                </div>
+                <div class="files-list" id="filesList">
+                    <div class="empty-state">
+                        <div class="empty-icon">📁</div>
+                        <p>No shared files</p>
+                        <small>Upload files to share them with other devices</small>
                     </div>
-                    <div class="sharing-option">
-                        <div class="option-icon">🔒</div>
-                        <h4>Secure Room</h4>
-                        <p>Create password-protected share</p>
-                        <button class="btn btn-outline" id="secureRoomBtn">Create Room</button>
+                </div>
+            </div>
+
+            <!-- Private Sharing Panel -->
+            <div class="card private-sharing-panel">
+                <div class="section-header">
+                    <h2>🤝 Private Sharing</h2>
+                    <div class="sharing-controls">
+                        <button class="btn btn-outline" id="shareHistoryBtn">
+                            <span class="btn-icon">📋</span>
+                            History
+                        </button>
+                        <button class="btn btn-outline" id="pendingRequestsBtn">
+                            <span class="btn-icon">⏳</span>
+                            Pending (<span id="pendingCount">0</span>)
+                        </button>
                     </div>
-                    <div class="sharing-option">
-                        <div class="option-icon">⏰</div>
-                        <h4>Temporary Share</h4>
-                        <p>Files auto-delete after time</p>
-                        <button class="btn btn-outline" id="tempShareBtn">Set Timer</button>
+                </div>
+                
+                <div class="sharing-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Success Rate:</span>
+                        <span class="stat-value" id="successRate">100%</span>
+                    </div>
+                </div>
+                
+                <div class="quick-share-actions">
+                    <button class="quick-share-btn" onclick="app.quickShareFiles()">
+                        <span class="action-icon">📁</span>
+                        <span>Share Files</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Advanced Features -->
+            <div class="card advanced-features">
+                <h2>⚡ Advanced Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h4>Analytics</h4>
+                        <p>View transfer statistics</p>
+                        <button class="btn btn-outline" id="analyticsBtn">View Stats</button>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h4>Encryption</h4>
+                        <p>End-to-end file encryption</p>
+                        <button class="btn btn-outline" id="encryptionBtn">Configure</button>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⏰</div>
+                        <h4>Scheduler</h4>
+                        <p>Schedule file transfers</p>
+                        <button class="btn btn-outline" id="schedulerBtn">Schedule</button>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h4>Remote Access</h4>
+                        <p>Access from anywhere</p>
+                        <button class="btn btn-outline" id="remoteBtn">Setup</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="card settings-panel">
+                <div class="section-header">
+                    <h2>⚙️ Settings</h2>
+                    <button class="btn btn-outline" id="settingsToggle">
+                        <span class="btn-icon">🔧</span>
+                        Configure
+                    </button>
+                </div>
+                <div class="settings-content" id="settingsContent" style="display: none;">
+                    <div class="settings-grid">
+                        <div class="setting-group">
+                            <h4>🔐 Security</h4>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="requireAuth" class="setting-checkbox">
+                                    <span>Require Authentication</span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="enableEncryption" class="setting-checkbox">
+                                    <span>Enable File Encryption</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <h4>📁 Storage</h4>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="autoDelete" class="setting-checkbox">
+                                    <span>Auto-delete files after 24h</span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="compressFiles" class="setting-checkbox">
+                                    <span>Compress uploaded files</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <h4>🌐 Network</h4>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <span>Max Upload Size (MB)</span>
+                                    <input type="number" id="maxUploadSize" class="setting-input" min="1" max="10240" value="1024">
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <span>Server Port</span>
+                                    <input type="number" id="serverPort" class="setting-input" min="1024" max="65535" value="8081">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <h4>🎨 Interface</h4>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <select id="themeSelect" class="setting-select">
+                                        <option value="auto">Auto (System)</option>
+                                        <option value="light">Light Theme</option>
+                                        <option value="dark">Dark Theme</option>
+                                    </select>
+                                    <span>Theme</span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="enableNotifications" class="setting-checkbox" checked>
+                                    <span>Enable Notifications</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-actions">
+                        <button class="btn btn-primary" id="saveSettings">💾 Save Settings</button>
+                        <button class="btn btn-outline" id="resetSettings">🔄 Reset to Defaults</button>
+                        <button class="btn btn-outline" id="exportSettings">📤 Export Config</button>
                     </div>
                 </div>
             </div>

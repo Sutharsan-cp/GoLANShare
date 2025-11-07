@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoLANshare API Features Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-button { margin: 5px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .test-button.success { background: #28a745; }
+        .test-button.error { background: #dc3545; }
+        .result { margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .result.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .result.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .result.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .json-display { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-pending { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 GoLANshare API Features Test</h1>
+        <p>Testing all additional features and API endpoints</p>
+        
+        <div class="feature-grid">
+            <div class="test-section">
+                <h2><span class="status-indicator status-pending" id="settings-status"></span>Settings API</h2>
+                <button class="test-button" onclick="testSettingsAPI()">Test Settings Load/Save</button>
+                <div id="settings-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2><span class="status-indicator status-pending" id="files-status"></span>Files API</h2>
+                <button class="test-button" onclick="testFilesAPI()">Test Files Endpoint</button>
+                <div id="files-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2><span class="status-indicator status-pending" id="devices-status"></span>Devices API</h2>
+                <button class="test-button" onclick="testDevicesAPI()">Test Device Discovery</button>
+                <div id="devices-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2><span class="status-indicator status-pending" id="transfers-status"></span>Transfers API</h2>
+                <button class="test-button" onclick="testTransfersAPI()">Test Transfers Endpoint</button>
+                <div id="transfers-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2><span class="status-indicator status-pending" id="websocket-status"></span>WebSocket Connection</h2>
+                <button class="test-button" onclick="testWebSocket()">Test WebSocket</button>
+                <div id="websocket-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2><span class="status-indicator status-pending" id="frontend-status"></span>Frontend Features</h2>
+                <button class="test-button" onclick="testFrontendFeatures()">Test UI Features</button>
+                <div id="frontend-result" class="result"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 Overall Test Results</h2>
+            <div id="overall-result" class="result info">
+                <p>Click "Run All Tests" to test all features automatically</p>
+            </div>
+            <button class="test-button" onclick="runAllTests()" style="background: #17a2b8; font-size: 16px; padding: 15px 30px;">🚀 Run All Tests</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081';
+        let testResults = {};
+
+        async function testSettingsAPI() {
+            const resultDiv = document.getElementById('settings-result');
+            const statusIndicator = document.getElementById('settings-status');
+            
+            try {
+                // Test GET settings
+                const getResponse = await fetch(`${API_BASE}/api/settings`);
+                const settings = await getResponse.json();
+                
+                // Test POST settings
+                const testSettings = {
+                    theme: 'dark',
+                    maxUploadSize: '2048',
+                    testSetting: 'test_value_' + Date.now()
+                };
+                
+                const postResponse = await fetch(`${API_BASE}/api/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testSettings)
+                });
+                
+                const saveResult = await postResponse.json();
+                
+                // Verify settings were saved
+                const verifyResponse = await fetch(`${API_BASE}/api/settings`);
+                const updatedSettings = await verifyResponse.json();
+                
+                if (updatedSettings.testSetting === testSettings.testSetting) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ Settings API working correctly<br>
+                            • GET: ${Object.keys(settings).length} settings loaded<br>
+                            • POST: Settings saved successfully<br>
+                            • Verification: Settings persisted correctly
+                        </div>
+                        <div class="json-display">Current Settings: ${JSON.stringify(updatedSettings, null, 2)}</div>
+                    `;
+                    statusIndicator.className = 'status-indicator status-success';
+                    testResults.settings = true;
+                } else {
+                    throw new Error('Settings verification failed');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Settings API failed: ${error.message}</div>`;
+                statusIndicator.className = 'status-indicator status-error';
+                testResults.settings = false;
+            }
+        }
+
+        async function testFilesAPI() {
+            const resultDiv = document.getElementById('files-result');
+            const statusIndicator = document.getElementById('files-status');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/files`);
+                const files = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Files API working correctly<br>
+                        • Files loaded: ${files.length} files<br>
+                        • Response time: ${response.status === 200 ? 'Good' : 'Slow'}
+                    </div>
+                    <div class="json-display">Files: ${JSON.stringify(files, null, 2)}</div>
+                `;
+                statusIndicator.className = 'status-indicator status-success';
+                testResults.files = true;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Files API failed: ${error.message}</div>`;
+                statusIndicator.className = 'status-indicator status-error';
+                testResults.files = false;
+            }
+        }
+
+        async function testDevicesAPI() {
+            const resultDiv = document.getElementById('devices-result');
+            const statusIndicator = document.getElementById('devices-status');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/devices`);
+                const devices = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Devices API working correctly<br>
+                        • Devices found: ${devices.length} devices<br>
+                        • Discovery: ${devices.length > 0 ? 'Active' : 'No devices found'}
+                    </div>
+                    <div class="json-display">Devices: ${JSON.stringify(devices, null, 2)}</div>
+                `;
+                statusIndicator.className = 'status-indicator status-success';
+                testResults.devices = true;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Devices API failed: ${error.message}</div>`;
+                statusIndicator.className = 'status-indicator status-error';
+                testResults.devices = false;
+            }
+        }
+
+        async function testTransfersAPI() {
+            const resultDiv = document.getElementById('transfers-result');
+            const statusIndicator = document.getElementById('transfers-status');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/transfers`);
+                const transfers = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Transfers API working correctly<br>
+                        • Active transfers: ${transfers.length} transfers<br>
+                        • API status: Operational
+                    </div>
+                    <div class="json-display">Transfers: ${JSON.stringify(transfers, null, 2)}</div>
+                `;
+                statusIndicator.className = 'status-indicator status-success';
+                testResults.transfers = true;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Transfers API failed: ${error.message}</div>`;
+                statusIndicator.className = 'status-indicator status-error';
+                testResults.transfers = false;
+            }
+        }
+
+        async function testWebSocket() {
+            const resultDiv = document.getElementById('websocket-result');
+            const statusIndicator = document.getElementById('websocket-status');
+            
+            try {
+                const ws = new WebSocket(`ws://localhost:8081/ws`);
+                
+                const connectionPromise = new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('WebSocket connection timeout'));
+                    }, 5000);
+                    
+                    ws.onopen = () => {
+                        clearTimeout(timeout);
+                        resolve('Connected');
+                    };
+                    
+                    ws.onerror = (error) => {
+                        clearTimeout(timeout);
+                        reject(error);
+                    };
+                });
+                
+                await connectionPromise;
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ WebSocket connection working correctly<br>
+                        • Connection: Established<br>
+                        • Real-time updates: Available
+                    </div>
+                `;
+                statusIndicator.className = 'status-indicator status-success';
+                testResults.websocket = true;
+                
+                ws.close();
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ WebSocket failed: ${error.message}</div>`;
+                statusIndicator.className = 'status-indicator status-error';
+                testResults.websocket = false;
+            }
+        }
+
+        async function testFrontendFeatures() {
+            const resultDiv = document.getElementById('frontend-result');
+            const statusIndicator = document.getElementById('frontend-status');
+            
+            try {
+                // Test if main page loads
+                const response = await fetch(`${API_BASE}/`);
+                const html = await response.text();
+                
+                // Check for key elements
+                const hasSettings = html.includes('Settings');
+                const hasAnalytics = html.includes('Analytics');
+                const hasEncryption = html.includes('Encryption');
+                const hasScheduler = html.includes('Scheduler');
+                const hasRemoteAccess = html.includes('Remote Access');
+                
+                const features = [
+                    { name: 'Settings Panel', present: hasSettings },
+                    { name: 'Analytics Dashboard', present: hasAnalytics },
+                    { name: 'Encryption Config', present: hasEncryption },
+                    { name: 'Transfer Scheduler', present: hasScheduler },
+                    { name: 'Remote Access Setup', present: hasRemoteAccess }
+                ];
+                
+                const workingFeatures = features.filter(f => f.present).length;
+                
+                if (workingFeatures === features.length) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ All frontend features present<br>
+                            • Features detected: ${workingFeatures}/${features.length}<br>
+                            • UI components: All loaded
+                        </div>
+                    `;
+                    statusIndicator.className = 'status-indicator status-success';
+                    testResults.frontend = true;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ⚠️ Some frontend features missing<br>
+                            • Features detected: ${workingFeatures}/${features.length}<br>
+                            • Missing: ${features.filter(f => !f.present).map(f => f.name).join(', ')}
+                        </div>
+                    `;
+                    statusIndicator.className = 'status-indicator status-error';
+                    testResults.frontend = false;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Frontend test failed: ${error.message}</div>`;
+                statusIndicator.className = 'status-indicator status-error';
+                testResults.frontend = false;
+            }
+        }
+
+        async function runAllTests() {
+            const overallResult = document.getElementById('overall-result');
+            overallResult.innerHTML = '<div class="result info">🔄 Running all tests...</div>';
+            
+            // Reset test results
+            testResults = {};
+            
+            // Run all tests
+            await testSettingsAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testFilesAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testDevicesAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testTransfersAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testWebSocket();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testFrontendFeatures();
+            
+            // Calculate overall results
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(result => result === true).length;
+            const successRate = Math.round((passedTests / totalTests) * 100);
+            
+            if (successRate === 100) {
+                overallResult.innerHTML = `
+                    <div class="result success">
+                        🎉 All tests passed! GoLANshare is fully functional<br>
+                        • Tests passed: ${passedTests}/${totalTests}<br>
+                        • Success rate: ${successRate}%<br>
+                        • Status: Ready for production use
+                    </div>
+                `;
+            } else if (successRate >= 80) {
+                overallResult.innerHTML = `
+                    <div class="result info">
+                        ✅ Most tests passed! GoLANshare is mostly functional<br>
+                        • Tests passed: ${passedTests}/${totalTests}<br>
+                        • Success rate: ${successRate}%<br>
+                        • Status: Minor issues detected
+                    </div>
+                `;
+            } else {
+                overallResult.innerHTML = `
+                    <div class="result error">
+                        ⚠️ Some tests failed! GoLANshare needs attention<br>
+                        • Tests passed: ${passedTests}/${totalTests}<br>
+                        • Success rate: ${successRate}%<br>
+                        • Status: Issues need to be resolved
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            setTimeout(runAllTests, 1000);
+        };
+    </script>
+</body>
+</html>
