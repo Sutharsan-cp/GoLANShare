@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GoLANshare Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .info { background: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe0e0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #e0ffe0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>GoLANshare Debug Test</h1>
+    
+    <div class="info">
+        <h3>Client Information</h3>
+        <p><strong>Your IP:</strong> <span id="clientIP">Loading...</span></p>
+        <p><strong>Server:</strong> <span id="serverInfo">Loading...</span></p>
+    </div>
+    
+    <div>
+        <button onclick="testDevices()">Test Devices API</button>
+        <button onclick="testDeviceInfo()">Test Device Info</button>
+        <button onclick="testDebugClients()">Test Debug Clients</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const apiBase = window.location.origin;
+        
+        // Get client IP on load
+        window.onload = function() {
+            document.getElementById('serverInfo').textContent = apiBase;
+            testDeviceInfo();
+        };
+        
+        function addResult(title, data, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `
+                <h4>${title}</h4>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+        
+        async function testDevices() {
+            try {
+                const response = await fetch(apiBase + '/api/devices');
+                const data = await response.json();
+                addResult('Devices API Response', data, response.ok ? 'success' : 'error');
+                console.log('Devices:', data);
+            } catch (error) {
+                addResult('Devices API Error', error.message, 'error');
+            }
+        }
+        
+        async function testDeviceInfo() {
+            try {
+                const response = await fetch(apiBase + '/api/device/info');
+                const data = await response.json();
+                addResult('Device Info API Response', data, response.ok ? 'success' : 'error');
+                
+                if (data.client_ip) {
+                    document.getElementById('clientIP').textContent = data.client_ip;
+                }
+                
+                console.log('Device Info:', data);
+            } catch (error) {
+                addResult('Device Info API Error', error.message, 'error');
+            }
+        }
+        
+        async function testDebugClients() {
+            try {
+                const response = await fetch(apiBase + '/api/debug/clients');
+                const data = await response.json();
+                addResult('Debug Clients API Response', data, response.ok ? 'success' : 'error');
+                console.log('Debug Clients:', data);
+            } catch (error) {
+                addResult('Debug Clients API Error', error.message, 'error');
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

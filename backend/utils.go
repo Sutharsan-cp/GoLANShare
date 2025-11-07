@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	//"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"

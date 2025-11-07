@@ -31,6 +31,7 @@ func initDB() {
 	db.SetConnMaxLifetime(5 * 60) // 5 minutes
 	
 	createTables()
+	migrateDatabase()
 
 	// Default user with correct bcrypt.GenerateFromPassword
 	hashed, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
@@ -56,6 +57,34 @@ func initDB() {
 	}
 	
 	log.Println("Database initialized successfully")
+}
+
+func migrateDatabase() {
+	// Check if devices table needs migration
+	var columnCount int
+	row := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name IN ('port', 'version', 'device_type', 'is_connected')")
+	row.Scan(&columnCount)
+	
+	if columnCount < 4 {
+		log.Println("Migrating devices table...")
+		
+		// Add new columns if they don't exist
+		migrations := []string{
+			"ALTER TABLE devices ADD COLUMN port INTEGER DEFAULT 8081",
+			"ALTER TABLE devices ADD COLUMN version TEXT DEFAULT '2.0.0'",
+			"ALTER TABLE devices ADD COLUMN device_type TEXT",
+			"ALTER TABLE devices ADD COLUMN is_connected BOOLEAN DEFAULT 0",
+		}
+		
+		for _, migration := range migrations {
+			if _, err := db.Exec(migration); err != nil {
+				// Column might already exist, ignore error
+				log.Printf("Migration note: %v", err)
+			}
+		}
+		
+		log.Println("Database migration completed")
+	}
 }
 
 func createTables() {
@@ -87,7 +116,11 @@ func createTables() {
 			ip TEXT,
 			last_seen TIMESTAMP,
 			os TEXT,
-			status TEXT
+			status TEXT,
+			port INTEGER DEFAULT 8081,
+			version TEXT DEFAULT '2.0.0',
+			device_type TEXT,
+			is_connected BOOLEAN DEFAULT 0
 		)`,
 		`CREATE TABLE IF NOT EXISTS chat_messages (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,12 +217,13 @@ func getAllTransfers() []Transfer {
 }
 
 func insertDevice(d Device) error {
-	return execDB("INSERT OR REPLACE INTO devices (id, name, ip, last_seen, os, status) VALUES (?, ?, ?, ?, ?, ?)",
-		d.ID, d.Name, d.IP, d.LastSeen, d.OS, d.Status)
+	return execDB("INSERT OR REPLACE INTO devices (id, name, ip, last_seen, os, status, port, version, device_type, is_connected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		d.ID, d.Name, d.IP, d.LastSeen, d.OS, d.Status, d.Port, d.Version, d.DeviceType, d.IsConnected)
 }
 
 func updateDevice(d Device) error {
-	return execDB("UPDATE devices SET last_seen=?, status=? WHERE id=?", d.LastSeen, d.Status, d.ID)
+	return execDB("UPDATE devices SET last_seen=?, status=?, port=?, version=?, device_type=?, is_connected=? WHERE id=?", 
+		d.LastSeen, d.Status, d.Port, d.Version, d.DeviceType, d.IsConnected, d.ID)
 }
 
 func deleteDevice(id string) error {
@@ -197,7 +231,7 @@ func deleteDevice(id string) error {
 }
 
 func getAllDevices() []Device {
-	rows, err := db.Query("SELECT id, name, ip, last_seen, os, status FROM devices")
+	rows, err := db.Query("SELECT id, name, ip, last_seen, os, status, COALESCE(port, 8081), COALESCE(version, '2.0.0'), COALESCE(device_type, os), COALESCE(is_connected, 0) FROM devices")
 	if err != nil {
 		log.Printf("Failed to query devices: %v", err)
 		return nil
@@ -207,7 +241,7 @@ func getAllDevices() []Device {
 	var devs []Device
 	for rows.Next() {
 		var d Device
-		if err := rows.Scan(&d.ID, &d.Name, &d.IP, &d.LastSeen, &d.OS, &d.Status); err != nil {
+		if err := rows.Scan(&d.ID, &d.Name, &d.IP, &d.LastSeen, &d.OS, &d.Status, &d.Port, &d.Version, &d.DeviceType, &d.IsConnected); err != nil {
 			log.Printf("Failed to scan device: %v", err)
 			continue
 		}
@@ -225,6 +259,7 @@ func insertChatMessage(m ChatMessage) error {
 	return execDB("INSERT INTO chat_messages (type, username, message, timestamp) VALUES (?, ?, ?, ?)",
 		m.Type, m.Username, m.Message, m.Timestamp)
 }
+
 
 func getAllChatMessages() []ChatMessage {
 	rows, err := db.Query("SELECT type, username, message, timestamp FROM chat_messages ORDER BY timestamp DESC LIMIT 50")

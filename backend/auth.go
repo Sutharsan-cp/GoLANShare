@@ -502,3 +502,4 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }
+
